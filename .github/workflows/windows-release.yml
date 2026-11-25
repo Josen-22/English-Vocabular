@@ -1,0 +1,37 @@
+name: Windows installer release
+
+on:
+  push:
+    branches: [v2-themes]
+    paths: [installer/release-version.txt]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - name: Build and test application and installer
+        shell: pwsh
+        run: ./tools/build-release.ps1
+      - name: Publish installer and portable archive
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = (Get-Content installer/release-version.txt -Raw).Trim()
+          if ($version -ne '2.1.0') { throw 'Release version does not match this build.' }
+          gh release create "v$version" `
+            "release/EnglishVocabular-$version-Setup-x64.exe" `
+            "release/EnglishVocabular-$version-Portable-x64.zip" `
+            "release/SHA256SUMS.txt" "release/使用说明.txt" `
+            --target $env:GITHUB_SHA --title "本地单词本 $version · 每日词卡" `
+            --notes-file docs/release-notes-2.1.0.md --latest
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release 发布失败。' }

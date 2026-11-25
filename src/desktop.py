@@ -2,30 +2,35 @@
 from datetime import date
 from pathlib import Path
 import argparse
+import base64
 import ctypes
 import logging
 import sys
 
 from bridge import Bridge
 from store import Store
+from paths import default_home
 
-DEFAULT_HOME=Path('D:/CC聊天记录/雅思学习/本地单词本')
+
+def resource_path(name):
+    return Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parent))/name
 
 
 def asset_path():
-    return Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parent))/'web'/'index.html'
+    return resource_path('web/index.html')
 
 
 def load_html():
     path=asset_path()
-    return path.read_text(encoding='utf-8').replace('<!--APP_STYLE-->',
+    icon='data:image/png;base64,'+base64.b64encode(resource_path('assets/vocab-icon.png').read_bytes()).decode('ascii')
+    return path.read_text(encoding='utf-8').replace('<!--APP_ICON-->',icon).replace('<!--APP_STYLE-->',
         '<style>'+path.with_name('app.css').read_text(encoding='utf-8')+'\n'+path.with_name('features.css').read_text(encoding='utf-8')+'</style>').replace('<!--APP_SCRIPT-->',
         '<script>'+path.with_name('features.js').read_text(encoding='utf-8')+'</script><script>'+path.with_name('app.js').read_text(encoding='utf-8')+'</script>')
 
 
 def main():
     parser=argparse.ArgumentParser(description='本地单词本 2.1 · 义项、复测、发音、学习计划与周报')
-    parser.add_argument('--home',type=Path,default=DEFAULT_HOME)
+    parser.add_argument('--home',type=Path,default=default_home())
     parser.add_argument('--check-installation',action='store_true',help=argparse.SUPPRESS)
     args=parser.parse_args()
     home=args.home.resolve()
@@ -33,6 +38,7 @@ def main():
         (home/folder).mkdir(parents=True,exist_ok=True)
     logging.basicConfig(filename=home/'数据'/'第二版错误日志.log',encoding='utf-8',level=logging.ERROR)
     try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('Josen22.EnglishVocabular')
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except (AttributeError,OSError):
         pass
@@ -51,7 +57,7 @@ def main():
     bridge._window=webview.create_window('本地单词本 · 进阶版 2.1',html=load_html(),js_api=bridge,
                  width=1160,height=820,min_size=(760,580),background_color='#f3f6f4',text_select=True)
     try:
-        webview.start(gui='edgechromium',debug=False,private_mode=True)
+        webview.start(gui='edgechromium',debug=False,private_mode=True,icon=str(resource_path('assets/vocab-icon.ico')))
     except Exception:
         logging.exception('第二版窗口启动失败')
         raise

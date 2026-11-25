@@ -8,7 +8,7 @@ import time
 import traceback
 
 from bridge import Bridge
-from desktop import load_html
+from desktop import load_html,resource_path
 from store import Store
 
 
@@ -38,6 +38,10 @@ def run(home):
         try:
             wait_js("document.documentElement.dataset.appReady === 'true'")
             report['bridge_ready']=True
+            wait_js("document.querySelector('.brand-mark').complete && document.querySelector('.brand-mark').naturalWidth===256")
+            report['brand_icon_loaded']=True
+            report['native_icon_size']=[window.native.Icon.Width,window.native.Icon.Height]
+            assert window.native.Icon.Width>0
             # Hidden windows pause animation frames; measure final palette values.
             window.evaluate_js("document.body.style.transition='none'")
             for theme in ('clean','paper','focus'):
@@ -116,7 +120,7 @@ def run(home):
             (home/'验证'/'第二版打包验收.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
             window.destroy()
     try:
-        webview.start(check,gui='edgechromium',debug=False,private_mode=True)
+        webview.start(check,gui='edgechromium',debug=False,private_mode=True,icon=str(resource_path('assets/vocab-icon.ico')))
     finally:
         temporary.cleanup()
     return 0 if report['ok'] else 1

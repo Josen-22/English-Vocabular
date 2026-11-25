@@ -19,6 +19,14 @@
 
 ## 运行
 
+### 下载 Windows 安装包
+
+在 [GitHub Releases](https://github.com/Josen-22/English-Vocabular/releases) 下载 `EnglishVocabular-2.1.0-Setup-x64.exe`，双击安装。也可使用便携 ZIP。支持 64 位 Windows 10（1809+）与 Windows 11，无需安装 Python。C 款「每日词卡」图标统一用于程序、窗口、快捷方式和界面。
+
+安装器只安装当前用户的程序，卸载保留学习数据与备份。没有 WebView2 Runtime 时会调用微软引导器安装，需要联网。详情见 [安装说明](docs/installation.txt)。
+
+### 从源码运行
+
 需要 Windows、Python 3.13 和 Microsoft Edge WebView2 Runtime。第一版仍保留在 `main`。
 
 ```powershell
@@ -26,13 +34,15 @@ python -m pip install -r src/requirements.txt
 python src/desktop.py
 ```
 
-默认数据目录为 `D:\CC聊天记录\雅思学习\本地单词本\`。可另设目录：
+有 D 盘时默认数据目录为 `D:\CC聊天记录\雅思学习\本地单词本\`；没有 D 盘时使用 `%LOCALAPPDATA%\EnglishVocabular\`。可另设目录：
 
 ```powershell
 python src/desktop.py --home 'E:\Vocabulary'
 ```
 
 打包：在 PowerShell 中执行 `src/build.ps1`，程序输出到 `程序/本地单词本_进阶版.exe`。运行打包后的程序无需安装 Python。
+
+执行 `tools/build-release.ps1` 可同时生成程序、中文安装向导、便携 ZIP 和 SHA256 校验文件，输出到 `release/`。构建时下载并验证微软 WebView2 引导器与 Inno Setup 编译器的数字签名。GitHub Actions 在 `v2-themes` 分支的 `installer/release-version.txt` 更新时执行相同构建并发布 Release；`main` 保留第一版。
 
 ## 三种主题与词库
 
@@ -57,7 +67,7 @@ cd src
 python -m unittest discover -s tests -v
 ```
 
-58 项测试覆盖查询解析、后台状态、词条管理、每日选词、义项快照、专项复测、设置边界、音频缓存、七天统计、Excel 交换与备份恢复，以及词库筛选排序、主题设置和桌面调用线程安全。实际 WebView2 联网验收使用隔离数据：
+62 项测试覆盖查询解析、后台状态、词条管理、每日选词、义项快照、专项复测、设置边界、音频缓存、七天统计、Excel 交换与备份恢复，以及词库筛选排序、主题设置、桌面调用线程安全、数据目录选择和多尺寸图标。实际 WebView2 联网验收使用隔离数据：
 
 ```powershell
 python src/desktop.py --check-installation --home 'D:\Vocabulary-Check'

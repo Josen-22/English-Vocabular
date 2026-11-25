@@ -17,3 +17,5 @@ node_modules/
 *.spec
 playwright-report/
 test-results/
+build-tools/
+release/
