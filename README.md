@@ -7,22 +7,52 @@
 - `main`：第一版稳定基线，Python + Tkinter + SQLite，含有道自动查词。
 - `v2-themes`：第二版，三种可切换主题、卡片与表格词库、排序筛选。
 
-## 第一版运行
+## 进阶版 2.1：五项学习功能
 
-需要 Windows 和 Python 3.13。
+- 学习义项：保留完整释义，单独选择抽测用的中文提示。
+- 错词复测：当天错词、全库薄弱词独立练习，支持断点续练，不改写每日结果。
+- 音标与发音：英美音标、点击播放、可选本机缓存，已缓存发音可以离线播放。
+- 学习设置：每日 1—50 词、新旧词比例、词义/拼写比例；已生成题组保持固定。
+- 七天周报：真实学习天数、去重复习词数、题型分别正确率和高频错词。
+
+操作详见 [进阶版使用说明](docs/learning-guide.md)。
+
+## 运行
+
+### 下载 Windows 安装包
+
+在 [GitHub Releases](https://github.com/Josen-22/English-Vocabular/releases) 下载 `EnglishVocabular-2.1.0-Setup-x64.exe`，双击安装。也可使用便携 ZIP。支持 64 位 Windows 10（1809+）与 Windows 11，无需安装 Python。C 款「每日词卡」图标统一用于程序、窗口、快捷方式和界面。
+
+安装器只安装当前用户的程序，卸载保留学习数据与备份。没有 WebView2 Runtime 时会调用微软引导器安装，需要联网。详情见 [安装说明](docs/installation.txt)。
+
+### 从源码运行
+
+需要 Windows、Python 3.13 和 Microsoft Edge WebView2 Runtime。第一版仍保留在 `main`。
 
 ```powershell
 python -m pip install -r src/requirements.txt
-python src/main.py
+python src/desktop.py
 ```
 
-默认数据目录为 `D:\CC聊天记录\雅思学习\本地单词本\`。可另设目录：
+有 D 盘时默认数据目录为 `D:\CC聊天记录\雅思学习\本地单词本\`；没有 D 盘时使用 `%LOCALAPPDATA%\EnglishVocabular\`。可另设目录：
 
 ```powershell
-python src/main.py --home 'E:\Vocabulary'
+python src/desktop.py --home 'E:\Vocabulary'
 ```
 
-打包：在 PowerShell 中执行 `src/build.ps1`，程序输出到 `程序/`。运行打包后的程序无需安装 Python。
+打包：在 PowerShell 中执行 `src/build.ps1`，程序输出到 `程序/本地单词本_进阶版.exe`。运行打包后的程序无需安装 Python。
+
+执行 `tools/build-release.ps1` 可同时生成程序、中文安装向导、便携 ZIP 和 SHA256 校验文件，输出到 `release/`。构建时下载并验证微软 WebView2 引导器与 Inno Setup 编译器的数字签名。GitHub Actions 在 `v2-themes` 分支的 `installer/release-version.txt` 更新时执行相同构建并发布 Release；`main` 保留第一版。
+
+## 三种主题与词库
+
+右上角切换“清爽学习 / 纸感手册 / 深色专注”。主题有各自的颜色、字体和导航布局，切换保留正在编辑的内容和抽测进度，并记住选择。
+
+词库提供卡片、表格两种视图，以及 9 种排序：最近/最早加入、字母正序/倒序、掌握度升序/降序、复习日期、正确率、最久未复习。支持全部、新词、到期词、薄弱词、学习中和已掌握筛选。排序和筛选可组合搜索，未测试词条在正确率排序中放在末尾。
+
+详情包含完整释义、来源、备注和复习历史。数据库格式兼容第一版，两版共用现有学习数据。
+
+详见 [第二版使用说明](docs/v2-guide.md)、[设计约定](docs/v2-design.md) 和 [后续改进建议](docs/next-steps.md)。
 
 ## 使用
 
@@ -37,10 +67,20 @@ cd src
 python -m unittest discover -s tests -v
 ```
 
-33 项测试覆盖查询解析、后台结果隔离、词条管理、每日选词、进度保存、Excel 交换与备份恢复。实时联网验收使用隔离数据：
+62 项测试覆盖查询解析、后台状态、词条管理、每日选词、义项快照、专项复测、设置边界、音频缓存、七天统计、Excel 交换与备份恢复，以及词库筛选排序、主题设置、桌面调用线程安全、数据目录选择和多尺寸图标。实际 WebView2 联网验收使用隔离数据：
 
 ```powershell
-python src/main.py --check-installation --home 'D:\Vocabulary-Check'
+python src/desktop.py --check-installation --home 'D:\Vocabulary-Check'
 ```
 
-源码、测试及使用说明可版本管理；个人数据库、原 Excel、备份和本地日志保存在使用者电脑，已加入忽略规则。
+浏览器交互回归（需要本机 Edge）：
+
+```powershell
+npm install
+npm run test:ui
+npm run test:learning
+```
+
+覆盖三主题、草稿与义项保留、发音点击及缓存、学习设置、独立专项、七天周报、查词收录、卡片/表格与 760/1024/1440 宽度检查。测试数据和报告仅写入忽略的 `验证/` 目录。原稳定版程序可继续保留，新增数据使用附加表。
+
+界面全部在本地打包，不依赖外部 CDN、字体、账号或云服务。源码、测试及使用说明可版本管理；个人数据库、原 Excel、备份和本地日志保存在使用者电脑，已加入忽略规则。

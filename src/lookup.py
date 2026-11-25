@@ -57,6 +57,8 @@ class LookupResult:
     headword: str
     senses: tuple[Sense, ...]
     source_url: str
+    uk_phonetic: str = ''
+    us_phonetic: str = ''
 
     @property
     def pos(self):
@@ -158,7 +160,16 @@ def parse_youdao(html, query):
                     senses.append(sense)
     if not senses:
         raise DictionaryError('该词条没有可识别的中文基础释义，请检查拼写或查看有道原网页。')
-    return LookupResult(query, headword, tuple(senses), dictionary_url(query))
+    phonetics={'uk':'','us':''}
+    for n in block.walk():
+        if 'pronounce' not in n.attrs.get('class','').split():
+            continue
+        phonetic=next((c for c in n.walk() if 'phonetic' in c.attrs.get('class','').split()),None)
+        if phonetic:
+            label=' '.join(n.text().split())
+            if label.startswith('英'):phonetics['uk']=phonetic.text().strip()
+            if label.startswith('美'):phonetics['us']=phonetic.text().strip()
+    return LookupResult(query, headword, tuple(senses), dictionary_url(query),phonetics['uk'],phonetics['us'])
 
 
 def fetch_youdao(query):

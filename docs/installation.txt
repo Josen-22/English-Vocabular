@@ -1,0 +1,32 @@
+本地单词本 2.1.0 · 安装与使用
+
+适用系统：64 位 Windows 10（1809 或更新版本）及 Windows 11。
+无需安装 Python、注册账号或配置 AI/API 密钥。
+
+安装版
+双击 EnglishVocabular-2.1.0-Setup-x64.exe，按提示安装。
+默认仅为当前用户安装，无需管理员权限；可勾选桌面快捷方式。
+已有 Microsoft Edge WebView2 Runtime 时可离线安装；没有时安装器会调用随包附带的微软引导程序，需要联网。
+
+便携版
+解压 EnglishVocabular-2.1.0-Portable-x64.zip 后双击 EnglishVocabular.exe。
+便携指程序无需安装；学习数据仍保存到下面的固定目录，不会随 ZIP 搬迁。
+本机需要 Microsoft Edge WebView2 Runtime；缺少时请运行安装版或从微软官网下载：
+https://developer.microsoft.com/microsoft-edge/webview2/
+
+数据与升级
+有 D 盘时继续使用 D:\CC聊天记录\雅思学习\本地单词本\ 下的数据和备份目录。
+没有 D 盘时保存到 %LOCALAPPDATA%\EnglishVocabular\。
+也可在命令行用 EnglishVocabular.exe --home "E:\我的词库" 指定目录。
+升级时直接安装新版；卸载只移除程序，保留学习数据与备份。
+换电脑时，请先在应用里完整备份，再在新电脑恢复。
+安装包不含作者或其他用户的词库、学习记录、Excel、缓存。
+
+开始使用
+输入英文或短语，点击“有道查词”，确认自动填入的释义后收入单词本。
+“学习设置”可调整每日词数和题型比例；已生成的当天题组保持固定。
+答完一题立即保存，关闭后可继续。支持学习义项、错词复测、英美音标与发音、七天周报。
+查词及首次获取发音需要网络；词库、抽测、已缓存发音可离线使用。
+
+图标采用 C 款“每日词卡”：绿色底、米白词卡、字母 a 与橙色勾选。
+项目地址：https://github.com/Josen-22/English-Vocabular

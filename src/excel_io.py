@@ -85,6 +85,8 @@ def import_workbook(store, path):
                     VALUES(?,?,?,?,?,?,?,?,?,?,?)''', (key,word,text(r[2]),meaning,text(r[4]),
                     text(r[13]),added,level,last,due,int(text(r[14]) == '是'))).lastrowid
                 count_words += 1
+                if hasattr(store,'import_metadata') and len(word_rows[4])>=18 and text(word_rows[4][15])=='学习义项':
+                    store.import_metadata(ident,text(r[15]),text(r[16]),text(r[17]))
             key_map[key] = ident
             if r[0] is not None:
                 id_map[str(r[0])] = ident
@@ -165,7 +167,7 @@ def sheet_xml(rows, widths):
 
 def export_workbook(store, path):
     word_headers = ['编号','单词 / 短语','词性','中文释义','来源','加入日期','掌握度',
-                    '抽问次数','正确次数','正确率','上次复习','下次复习','状态','备注','已删除']
+                    '抽问次数','正确次数','正确率','上次复习','下次复习','状态','备注','已删除','学习义项','英式音标','美式音标']
     review_headers = ['日期','单词编号','单词 / 短语','抽问方向','你的回答','结果','反馈 / 备注','学习批次']
     words = [['本地单词本'], ['导出日期：'+store.today().isoformat()],
              ['完整进度请使用数据库备份；本表用于查看和交换单词及复习记录。'], [], word_headers]
@@ -173,7 +175,8 @@ def export_workbook(store, path):
         words.append([w['id'],w['word'],w['pos'],w['meaning'],w['source'],w['added'],w['mastery'],
                       w['attempts'],w['correct'],round(w['correct']/w['attempts'],4) if w['attempts'] else None,
                       w['last_review'],w['due'],'待复习' if w['due'] <= store.today().isoformat() else '未到期',
-                      w['notes'],'是' if w['deleted'] else '否'])
+                      w['notes'],'是' if w['deleted'] else '否',
+                      *[w[key] if key in w.keys() else '' for key in ('study_meaning','uk_phonetic','us_phonetic')]])
     reviews = [['复习记录'], ['认识计为正确，模糊和不认识不计为正确。'], [], [], review_headers]
     labels = {'认识': '正确', '模糊': '模糊', '不认识': '错误'}
     for r in store.reviews():
@@ -195,7 +198,7 @@ def export_workbook(store, path):
             archive.writestr('xl/workbook.xml', tostring(book, encoding='utf-8', xml_declaration=True))
             archive.writestr('xl/_rels/workbook.xml.rels', f'<Relationships xmlns="{REL}">'+''.join(f'<Relationship Id="rId{i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet{i}.xml"/>' for i in (1,2))+'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>')
             archive.writestr('xl/styles.xml', styles)
-            archive.writestr('xl/worksheets/sheet1.xml', sheet_xml(words, [9,25,13,45,22,15,10,12,12,12,15,15,13,45,10]))
+            archive.writestr('xl/worksheets/sheet1.xml', sheet_xml(words, [9,25,13,45,22,15,10,12,12,12,15,15,13,45,10,40,20,20]))
             archive.writestr('xl/worksheets/sheet2.xml', sheet_xml(reviews, [15,12,26,16,30,13,50,30]))
         os.replace(temporary, path)
     finally:
