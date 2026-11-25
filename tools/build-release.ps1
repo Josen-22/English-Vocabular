@@ -49,8 +49,8 @@ Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\installation.txt') -Destinatio
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\learning-guide.md') -Destination (Join-Path $portableDir '进阶版使用说明.md')
 $zipPath = Join-Path $OutputDir 'EnglishVocabular-2.1.0-Portable-x64.zip'
 Compress-Archive -Path (Join-Path $portableDir '*') -DestinationPath $zipPath -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\installation.txt') -Destination (Join-Path $OutputDir '使用说明.txt')
-$hashLines = @('EnglishVocabular-2.1.0-Setup-x64.exe','EnglishVocabular-2.1.0-Portable-x64.zip','使用说明.txt') | ForEach-Object {
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\installation.txt') -Destination (Join-Path $OutputDir 'README.txt')
+$hashLines = @('EnglishVocabular-2.1.0-Setup-x64.exe','EnglishVocabular-2.1.0-Portable-x64.zip','README.txt') | ForEach-Object {
     $itemHash = Get-FileHash -LiteralPath (Join-Path $OutputDir $_) -Algorithm SHA256
     $itemHash.Hash.ToLower() + '  ' + $_
 }

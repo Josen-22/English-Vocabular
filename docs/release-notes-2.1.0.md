@@ -7,4 +7,4 @@
 
 下载 `EnglishVocabular-2.1.0-Setup-x64.exe` 安装；或下载 `EnglishVocabular-2.1.0-Portable-x64.zip` 解压运行。安装包仅含程序，不含个人学习数据。需要 64 位 Windows 10（1809+）或 Windows 11；缺少 WebView2 时安装器需联网安装微软运行环境。
 
-`SHA256SUMS.txt` 用于校验下载文件。完整使用方法见附件“使用说明.txt”。
+`SHA256SUMS.txt` 用于校验下载文件。完整使用方法见附件 `README.txt`（中文说明）。
