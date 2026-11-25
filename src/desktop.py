@@ -19,12 +19,12 @@ def asset_path():
 def load_html():
     path=asset_path()
     return path.read_text(encoding='utf-8').replace('<!--APP_STYLE-->',
-        '<style>'+path.with_name('app.css').read_text(encoding='utf-8')+'</style>').replace('<!--APP_SCRIPT-->',
-        '<script>'+path.with_name('app.js').read_text(encoding='utf-8')+'</script>')
+        '<style>'+path.with_name('app.css').read_text(encoding='utf-8')+'\n'+path.with_name('features.css').read_text(encoding='utf-8')+'</style>').replace('<!--APP_SCRIPT-->',
+        '<script>'+path.with_name('features.js').read_text(encoding='utf-8')+'</script><script>'+path.with_name('app.js').read_text(encoding='utf-8')+'</script>')
 
 
 def main():
-    parser=argparse.ArgumentParser(description='本地单词本第二版 · 三种主题与词库排序')
+    parser=argparse.ArgumentParser(description='本地单词本 2.1 · 义项、复测、发音、学习计划与周报')
     parser.add_argument('--home',type=Path,default=DEFAULT_HOME)
     parser.add_argument('--check-installation',action='store_true',help=argparse.SUPPRESS)
     args=parser.parse_args()
@@ -48,7 +48,7 @@ def main():
         store.close()
     import webview
     bridge=Bridge(home)
-    bridge._window=webview.create_window('本地单词本 · 第二版',html=load_html(),js_api=bridge,
+    bridge._window=webview.create_window('本地单词本 · 进阶版 2.1',html=load_html(),js_api=bridge,
                  width=1160,height=820,min_size=(760,580),background_color='#f3f6f4',text_select=True)
     try:
         webview.start(gui='edgechromium',debug=False,private_mode=True)

@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import logging
 import sys
+from io import BytesIO
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from bridge import Bridge
@@ -11,6 +12,7 @@ import bridge as bridge_module
 from desktop import load_html
 from lookup import LookupResult,Sense
 from store import Store
+import pronunciation
 
 
 def main():
@@ -32,7 +34,10 @@ def main():
                     store.conn.execute('''INSERT INTO reviews(word_id,word,reviewed,direction,result)
                         VALUES(?,?,?,?,?)''',(ident,word,str(date.today()-timedelta(days=3)),'英译中','认识' if n%2 else '不认识'))
     store.close()
-    bridge_module.fetch_youdao=lambda word:LookupResult(word,word,(Sense('adj.','有韧性的；能迅速恢复的'),),'https://dict.youdao.com/w/eng/'+word+'/')
+    bridge_module.fetch_youdao=lambda word:LookupResult(word,word,(Sense('adj.','有韧性的；能迅速恢复的'),),'https://dict.youdao.com/w/eng/'+word+'/','[rɪˈzɪliənt]','[rɪˈzɪliənt]')
+    class AudioSample(BytesIO):
+        url='https://dict.youdao.com/dictvoice'
+    pronunciation.urlopen=lambda request,timeout:AudioSample(b'ID3'+b'\x00'*100)
     frontend=home/'frontend.html';frontend.write_text(load_html(),encoding='utf-8')
     api=Bridge(home)
     print(json.dumps({'ready':True,'url':frontend.as_uri()}),flush=True)

@@ -21,7 +21,7 @@ def select_words(rows, today, search='', category='all', sort='added_desc'):
         w['is_learning']=bool(attempts and 2<=w['mastery']<=3)
         if category!='all' and not w[{'new':'is_new','due':'is_due','weak':'is_weak','learning':'is_learning','mastered':'is_mastered'}[category]]:
             continue
-        if needle and needle not in word_key(' '.join(w[k] for k in ('word','meaning','pos','source','notes'))):
+        if needle and needle not in word_key(' '.join(w[k] for k in ('word','meaning','pos','source','notes'))+' '+w.get('study_meaning','')):
             continue
         selected.append(w)
     keys={

@@ -4,8 +4,19 @@ import json
 import os
 from library import SORTS,FILTERS
 
-DEFAULTS={'theme':'clean','view':'cards','sort':'added_desc','filter':'all'}
+DEFAULTS={'theme':'clean','view':'cards','sort':'added_desc','filter':'all',
+          'daily_count':10,'new_percent':50,'meaning_percent':50,'audio_cache':False}
 ALLOWED={'theme':{'clean','paper','focus'},'view':{'cards','table'},'sort':SORTS,'filter':FILTERS}
+
+
+def valid_setting(key,value):
+    if key in ALLOWED:
+        return isinstance(value,str) and value in ALLOWED[key]
+    if key=='audio_cache':
+        return type(value) is bool
+    if key in ('daily_count','new_percent','meaning_percent'):
+        return type(value) is int and (1<=value<=50 if key=='daily_count' else 0<=value<=100)
+    return False
 
 
 class Preferences:
@@ -19,11 +30,11 @@ class Preferences:
             return dict(DEFAULTS)
         if not isinstance(data,dict):
             return dict(DEFAULTS)
-        return {k:data.get(k) if isinstance(data.get(k),str) and data[k] in ALLOWED[k] else default
+        return {k:data.get(k) if valid_setting(k,data.get(k)) else default
                 for k,default in DEFAULTS.items()}
 
     def update(self,changes):
-        if not isinstance(changes,dict) or any(k not in ALLOWED or not isinstance(v,str) or v not in ALLOWED[k] for k,v in changes.items()):
+        if not isinstance(changes,dict) or any(not valid_setting(k,v) for k,v in changes.items()):
             raise ValueError('界面设置无效。')
         result=self.read()
         result.update(changes)

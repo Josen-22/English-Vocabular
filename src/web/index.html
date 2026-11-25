@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; media-src data: blob:; base-uri 'none'; form-action 'none'">
   <title>本地单词本 · 第二版</title>
   <!--APP_STYLE-->
 </head>
@@ -20,19 +20,20 @@
   <div id="app" class="app-shell">
     <header class="app-header">
       <div class="brand"><span class="brand-mark" aria-hidden="true">v</span><div><strong>单词手册</strong><small>把遇见的词，留在这里。</small></div></div>
-      <div class="header-tools"><span id="date-label" class="muted"></span><label class="theme-control">界面风格<select id="theme-select" aria-label="界面风格"><option value="clean">清爽学习</option><option value="paper">纸感手册</option><option value="focus">深色专注</option></select></label></div>
+      <div class="header-tools"><span id="date-label" class="muted"></span><button id="open-settings" class="subtle">学习设置</button><label class="theme-control">界面风格<select id="theme-select" aria-label="界面风格"><option value="clean">清爽学习</option><option value="paper">纸感手册</option><option value="focus">深色专注</option></select></label></div>
     </header>
     <div class="workspace">
       <aside class="navigation" aria-label="主要导航">
-        <nav><button data-nav="study" class="nav-button active" aria-current="page"><svg><use href="#i-layers"/></svg>今日学习</button><button data-nav="lookup" class="nav-button"><svg><use href="#i-search"/></svg>查词收录</button><button data-nav="library" class="nav-button"><svg><use href="#i-book"/></svg>单词手册</button></nav>
+        <nav><button data-nav="study" class="nav-button active" aria-current="page"><svg><use href="#i-layers"/></svg>今日学习</button><button data-nav="lookup" class="nav-button"><svg><use href="#i-search"/></svg>查词收录</button><button data-nav="library" class="nav-button"><svg><use href="#i-book"/></svg>单词手册</button><button data-nav="report" class="nav-button"><svg><use href="#i-table"/></svg>学习周报</button></nav>
         <div class="nav-foot"><span class="local-dot"></span>数据保存在本机<br><span id="side-count">正在读取…</span></div>
       </aside>
       <main class="content">
         <section id="study-page" class="page">
-          <div class="page-heading"><div><p class="eyebrow">A LITTLE EVERY DAY</p><h1>今天，记住一点。</h1><p class="muted">十个词的时间，留给自己。</p></div><span id="study-summary" class="badge">今日十词</span></div>
+          <div class="page-heading"><div><p class="eyebrow">A LITTLE EVERY DAY</p><h1 id="study-title">今天，记住一点。</h1><p id="study-subtitle" class="muted">每天一点时间，留给自己。</p></div><span id="study-summary" class="badge">每日抽测</span></div>
+          <div id="practice-actions" class="practice-actions"><button id="back-daily" hidden>返回每日抽测</button><button id="practice-wrong" hidden>再练本轮错词</button><button id="practice-weak">练薄弱词</button><button id="resume-practice" hidden>继续上次专项</button><span id="practice-caption" class="muted small"></span></div>
           <div id="study-progress" class="study-progress" hidden><div><strong>今日抽测</strong><span id="progress-label" class="muted"></span></div><div class="progress-track" role="progressbar" aria-label="今日抽测进度" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"><span id="progress-fill"></span></div></div>
-          <div class="study-layout"><div class="study-scene"><aside class="paper-index"><p class="eyebrow">今日篇目</p><ol id="today-index"></ol><span class="muted small">五个新词<br>五个熟悉的面孔</span></aside><div id="study-content"></div></div><aside class="quick-lookup"><h3>随手查词</h3><p class="muted small">收好刚刚遇到的词。</p><label for="quick-word">单词或短语</label><input id="quick-word" placeholder="例如 resilient"><button id="quick-lookup-button">去查词 <svg><use href="#i-arrow"/></svg></button><p class="muted small">查询结果会自动填好词性与释义。</p></aside></div>
-          <p class="study-note muted small">新词与旧词各半 · 词义回忆与英文拼写各半 · 答完即时保存</p>
+          <div class="study-layout"><div class="study-scene"><aside class="paper-index"><p class="eyebrow">本轮篇目</p><ol id="today-index"></ol><span id="paper-study-note" class="muted small">按你的学习计划<br>一点一点记住</span></aside><div id="study-content"></div></div><aside class="quick-lookup"><h3>随手查词</h3><p class="muted small">收好刚刚遇到的词。</p><label for="quick-word">单词或短语</label><input id="quick-word" placeholder="例如 resilient"><button id="quick-lookup-button">去查词 <svg><use href="#i-arrow"/></svg></button><p class="muted small">查询结果会自动填好词性与释义。</p></aside></div>
+          <p id="study-note" class="study-note muted small">答完即时保存 · 已生成的题组保持固定</p>
         </section>
         <section id="lookup-page" class="page" hidden>
           <div class="page-heading"><div><p class="eyebrow">A WORD AT A TIME</p><h1>遇到的词，顺手记下。</h1><p class="muted">有道自动填好释义，浏览后即可收录。</p></div></div>
@@ -40,13 +41,16 @@
           <p id="lookup-feedback" class="inline-feedback" aria-live="polite"></p>
           <div id="editor" class="editor surface" hidden>
             <div class="section-heading"><div><p id="editor-caption" class="eyebrow">准备收录</p><h2 id="editor-title"></h2></div><div class="button-row"><button id="requery-button" class="subtle">重新查询有道</button><button id="open-web-button" class="subtle">有道原网页 ↗</button></div></div>
+            <div id="editor-audio"></div>
             <div class="editor-grid"><label>单词 / 短语<input id="edit-word"></label><label>词性<input id="edit-pos" placeholder="网页未提供时可留空"></label></div>
             <label>中文释义<textarea id="edit-meaning" rows="6"></textarea></label>
+            <fieldset class="sense-fieldset"><legend>这次要记的意思</legend><p class="muted small">勾选下面的义项，或自行填写抽测提示。完整释义仍保留在上面。</p><div id="sense-options" class="sense-options"></div><label>抽测使用的中文提示<textarea id="edit-study-meaning" rows="2" placeholder="留空时使用完整释义"></textarea></label><button id="reset-study-meaning" type="button" class="subtle">使用完整释义</button></fieldset>
             <label>来源<input id="edit-source"></label><label>自己的备注<textarea id="edit-notes" rows="3" placeholder="例如：在听力中没有听出来；来自某篇阅读"></textarea></label>
             <div class="editor-actions"><button id="save-button" class="primary"><svg><use href="#i-check"/></svg>收入单词手册</button><button id="clear-editor-button">查下一个词</button><span class="muted small">点击保存后才会写入。</span></div>
           </div>
           <div id="lookup-empty" class="empty-state surface"><span class="empty-letter" aria-hidden="true">Aa</span><h2>每个新词，都有一个开始。</h2><p class="muted">输入单词、查好释义、放进手册。就这三步。</p></div>
         </section>
+        <section id="report-page" class="page" hidden><div class="page-heading"><div><p class="eyebrow">WEEKLY REVIEW</p><h1>看见这一周的积累。</h1><p id="report-period" class="muted"></p></div><button id="refresh-report">刷新周报</button></div><div id="report-content"></div></section>
         <section id="library-page" class="page" hidden>
           <div class="page-heading"><div><p class="eyebrow">MY VOCABULARY</p><h1>慢慢积累，都在这里。</h1><p id="library-summary" class="muted">正在读取手册…</p></div><button id="library-add" class="primary">＋ 收录新词</button></div>
           <div id="distribution" class="distribution" aria-label="词库掌握情况"></div>
@@ -64,6 +68,7 @@
   <dialog id="detail-dialog" class="detail-dialog"><div class="dialog-header"><h2>词条详情</h2><button data-close="detail-dialog" aria-label="关闭词条详情">×</button></div><div id="detail-body"></div><div class="dialog-actions"><button id="detail-edit" class="primary">编辑词条</button><button id="detail-delete" class="danger">删除词条</button></div></dialog>
   <dialog id="preview-dialog" class="preview-dialog"><div class="dialog-header"><h2>有道新释义</h2><button data-close="preview-dialog" aria-label="关闭释义预览">×</button></div><div id="preview-body"></div><div class="dialog-actions"><button id="use-preview" class="primary">使用这些释义</button><button data-close="preview-dialog">保留原内容</button></div></dialog>
   <dialog id="confirm-dialog"><h2 id="confirm-title"></h2><p id="confirm-message"></p><div class="dialog-actions"><button id="confirm-yes" class="primary">确定</button><button id="confirm-no">取消</button></div></dialog>
+  <dialog id="settings-dialog"><div class="dialog-header"><h2>学习设置</h2><button data-close="settings-dialog" aria-label="关闭学习设置">×</button></div><p class="muted small">每日抽测的设置只影响之后新建的题组，本轮题目保持固定。</p><label class="setting-field">每日单词数量（1—50）<input id="setting-count" type="number" min="1" max="50" step="1"></label><label class="setting-field">新词比例 <strong id="new-ratio-label"></strong><input id="setting-new" type="range" min="0" max="100" step="5"></label><label class="setting-field">词义回忆比例 <strong id="meaning-ratio-label"></strong><input id="setting-meaning" type="range" min="0" max="100" step="5"></label><p id="setting-preview" class="muted small"></p><label class="cache-setting"><input id="setting-audio-cache" type="checkbox">将点击播放的发音缓存到本机，便于断网重播</label><div class="dialog-actions"><button id="save-settings" class="primary">保存设置</button><button data-close="settings-dialog">取消</button></div></dialog>
   <div id="toast" class="toast" role="status" hidden></div>
   <!--APP_SCRIPT-->
 </body></html>

@@ -11,16 +11,20 @@ from library import select_words,distribution
 from lookup import fetch_youdao,dictionary_url
 from preferences import Preferences
 from store import Store,spelling_matches
+from learning import LearningStore,sense_options
+from pronunciation import Pronunciation
+from weekly import weekly_report
 
 
 class Bridge:
-    def __init__(self,home,store_factory=Store):
+    def __init__(self,home,store_factory=LearningStore):
         self._home=Path(home)
         self._db=self._home/'数据'/'单词本.sqlite3'
         self._settings=Preferences(self._home/'数据'/'界面设置.json')
         self._lock=RLock()
         self._window=None
         self._store_factory=store_factory
+        self._pronunciation=Pronunciation(self._home/'数据'/'发音缓存')
 
     def call(self,action,payload=None):
         handlers={
@@ -29,12 +33,15 @@ class Bridge:
             'start':self._start,'answer':self._answer,'check':self._check,'preferences':self._preferences,
             'backup':self._backup,'restore':self._restore,'import':self._import,
             'export':self._export,'open_dictionary':self._open_dictionary,
+            'practice_start':self._practice_start,'practice_answer':self._practice_answer,
+            'practice_get':self._practice_get,'weekly':self._weekly,'pronounce':self._pronounce,
+            'senses':self._senses,
         }
         try:
             if action not in handlers or (payload is not None and not isinstance(payload,dict)):
                 raise ValueError('不支持的操作。')
-            if action=='lookup':
-                return {'ok':True,'data':self._lookup(payload or {})}
+            if action in ('lookup','pronounce'):
+                return {'ok':True,'data':handlers[action](payload or {})}
             with self._lock:
                 data=handlers[action](payload or {})
             return {'ok':True,'data':data}
@@ -51,7 +58,16 @@ class Bridge:
             questions=[dict(q) for q in s.questions()]
             rows=s.words()
             return {'today':s.today().isoformat(),'stats':s.stats(),'distribution':distribution(rows),
-                    'questions':questions,'preferences':self._settings.read()}
+                    'questions':self._decorate(s,questions),'preferences':self._settings.read(),
+                    'daily_config':s.daily_config(),'practice':s.practice()}
+
+    @staticmethod
+    def _decorate(store,questions):
+        for q in questions:
+            w=store.get_word(q['word_id'])
+            for name in ('uk_phonetic','us_phonetic'):
+                q[name]=w.get(name,'') if w and w['word']==q['word'] else ''
+        return questions
 
     def _words(self,p):
         with self._store() as s:
@@ -66,7 +82,9 @@ class Bridge:
                     return {'existing':True,'word':dict(existing)}
         result=fetch_youdao(word)
         return {'existing':False,'word':{'word':word,'pos':result.pos,'meaning':result.meaning,
-                'source':'有道词典 · '+result.source_url,'notes':''},'headword':result.headword}
+                'source':'有道词典 · '+result.source_url,'notes':'','study_meaning':'',
+                'senses':sense_options(result.meaning),'uk_phonetic':result.uk_phonetic,
+                'us_phonetic':result.us_phonetic},'headword':result.headword}
 
     def _save(self,p):
         with self._store() as s:
@@ -74,7 +92,9 @@ class Bridge:
             if ident is not None:
                 ident=int(ident)
             ident=s.save_word(str(p.get('word','')),str(p.get('meaning','')),str(p.get('pos','')),
-                              str(p.get('source','')),str(p.get('notes','')),ident)
+                              str(p.get('source','')),str(p.get('notes','')),ident,
+                              study_meaning=p.get('study_meaning'),senses=p.get('senses'),
+                              uk_phonetic=p.get('uk_phonetic'),us_phonetic=p.get('us_phonetic'))
             return dict(s.get_word(ident))
 
     def _delete(self,p):
@@ -92,7 +112,8 @@ class Bridge:
 
     def _start(self,p):
         with self._store() as s:
-            return [dict(q) for q in s.start_day()]
+            config=self._settings.read()
+            return self._decorate(s,[dict(q) for q in s.start_day(config['daily_count'],config['new_percent'],config['meaning_percent'])])
 
     def _answer(self,p):
         with self._store() as s:
@@ -100,17 +121,49 @@ class Bridge:
             if q is None:
                 raise ValueError('题目不存在。')
             s.answer(q['id'],str(p.get('answer','')),str(p['result']))
-            return [dict(row) for row in s.questions()]
+            return self._decorate(s,[dict(row) for row in s.questions()])
 
     def _check(self,p):
         with self._store() as s:
-            q=s.conn.execute('SELECT * FROM questions WHERE id=?',(int(p['id']),)).fetchone()
+            table='practice_questions' if p.get('practice') else 'questions'
+            q=s.conn.execute(f'SELECT * FROM {table} WHERE id=?',(int(p['id']),)).fetchone()
             if q is None:
                 raise ValueError('题目不存在。')
             return {'matches':spelling_matches(str(p.get('answer','')),q['word'])}
 
     def _preferences(self,p):
         return self._settings.update(p)
+
+    def _practice_start(self,p):
+        settings=self._settings.read()
+        with self._store() as s:
+            session=s.start_practice(p.get('mode','daily_wrong'),settings['daily_count'],settings['meaning_percent'])
+            if session:self._decorate(s,session['questions'])
+            return session
+
+    def _practice_get(self,p):
+        with self._store() as s:
+            session=s.practice(p.get('id'))
+            if session:self._decorate(s,session['questions'])
+            return session
+
+    def _practice_answer(self,p):
+        with self._store() as s:
+            q=s.conn.execute('SELECT session_id FROM practice_questions WHERE id=?',(int(p['id']),)).fetchone()
+            if q is None:raise ValueError('专项题目不存在。')
+            s.answer_practice(int(p['id']),str(p.get('answer','')),str(p['result']))
+            session=s.practice(q['session_id'])
+            self._decorate(s,session['questions'])
+            return session
+
+    def _weekly(self,p):
+        with self._store() as s:return weekly_report(s)
+
+    def _pronounce(self,p):
+        return self._pronunciation.get(str(p.get('word','')),p.get('accent','uk'),self._settings.read()['audio_cache'])
+
+    def _senses(self,p):
+        return sense_options(str(p.get('meaning','')),str(p.get('pos','')))
 
     def _backup(self,p):
         with self._store() as s:

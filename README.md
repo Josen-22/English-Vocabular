@@ -7,7 +7,17 @@
 - `main`：第一版稳定基线，Python + Tkinter + SQLite，含有道自动查词。
 - `v2-themes`：第二版，三种可切换主题、卡片与表格词库、排序筛选。
 
-## 第二版运行
+## 进阶版 2.1：五项学习功能
+
+- 学习义项：保留完整释义，单独选择抽测用的中文提示。
+- 错词复测：当天错词、全库薄弱词独立练习，支持断点续练，不改写每日结果。
+- 音标与发音：英美音标、点击播放、可选本机缓存，已缓存发音可以离线播放。
+- 学习设置：每日 1—50 词、新旧词比例、词义/拼写比例；已生成题组保持固定。
+- 七天周报：真实学习天数、去重复习词数、题型分别正确率和高频错词。
+
+操作详见 [进阶版使用说明](docs/learning-guide.md)。
+
+## 运行
 
 需要 Windows、Python 3.13 和 Microsoft Edge WebView2 Runtime。第一版仍保留在 `main`。
 
@@ -22,7 +32,7 @@ python src/desktop.py
 python src/desktop.py --home 'E:\Vocabulary'
 ```
 
-打包：在 PowerShell 中执行 `src/build.ps1`，程序输出到 `程序/本地单词本_第二版.exe`。运行打包后的程序无需安装 Python。
+打包：在 PowerShell 中执行 `src/build.ps1`，程序输出到 `程序/本地单词本_进阶版.exe`。运行打包后的程序无需安装 Python。
 
 ## 三种主题与词库
 
@@ -47,7 +57,7 @@ cd src
 python -m unittest discover -s tests -v
 ```
 
-39 项测试覆盖查询解析、后台结果隔离、词条管理、每日选词、进度保存、Excel 交换、备份恢复，以及词库筛选排序、主题设置持久化和桌面调用线程安全。实际 WebView2 联网验收使用隔离数据：
+58 项测试覆盖查询解析、后台状态、词条管理、每日选词、义项快照、专项复测、设置边界、音频缓存、七天统计、Excel 交换与备份恢复，以及词库筛选排序、主题设置和桌面调用线程安全。实际 WebView2 联网验收使用隔离数据：
 
 ```powershell
 python src/desktop.py --check-installation --home 'D:\Vocabulary-Check'
@@ -58,8 +68,9 @@ python src/desktop.py --check-installation --home 'D:\Vocabulary-Check'
 ```powershell
 npm install
 npm run test:ui
+npm run test:learning
 ```
 
-覆盖三主题、草稿保留、查词收录、卡片/表格、搜索筛选、详情、抽测和 760/1024/1440 宽度检查，测试数据和报告仅写入忽略的 `验证/` 目录。
+覆盖三主题、草稿与义项保留、发音点击及缓存、学习设置、独立专项、七天周报、查词收录、卡片/表格与 760/1024/1440 宽度检查。测试数据和报告仅写入忽略的 `验证/` 目录。原稳定版程序可继续保留，新增数据使用附加表。
 
 界面全部在本地打包，不依赖外部 CDN、字体、账号或云服务。源码、测试及使用说明可版本管理；个人数据库、原 Excel、备份和本地日志保存在使用者电脑，已加入忽略规则。

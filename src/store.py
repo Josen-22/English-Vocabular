@@ -82,25 +82,28 @@ class Store:
         return self.conn.execute("SELECT * FROM words WHERE key=?", (word_key(word),)).fetchone()
 
     def save_word(self, word, meaning, pos='', source='', notes='', ident=None):
+        with self.conn:
+            return self._save_word(word,meaning,pos,source,notes,ident)
+
+    def _save_word(self, word, meaning, pos='', source='', notes='', ident=None):
         word, meaning = word.strip(), meaning.strip()
         if not word or not meaning:
             raise ValueError("请填写单词和中文释义。")
         existing = self.find_word(word)
         if existing and existing['id'] != ident:
             raise ValueError("这个单词已在单词本中，请先打开已有词条编辑。")
-        with self.conn:
-            if ident is None:
-                cursor = self.conn.execute(
-                    "INSERT INTO words(key,word,meaning,pos,source,notes,added,due) VALUES(?,?,?,?,?,?,?,?)",
-                    (word_key(word), word, meaning, pos.strip(), source.strip(), notes.strip(),
-                     self.today().isoformat(), self.today().isoformat()))
-                return cursor.lastrowid
-            if self.get_word(ident) is None:
-                raise ValueError("词条不存在。")
-            self.conn.execute(
-                "UPDATE words SET key=?,word=?,meaning=?,pos=?,source=?,notes=?,deleted=0 WHERE id=?",
-                (word_key(word), word, meaning, pos.strip(), source.strip(), notes.strip(), ident))
-            return ident
+        if ident is None:
+            cursor = self.conn.execute(
+                "INSERT INTO words(key,word,meaning,pos,source,notes,added,due) VALUES(?,?,?,?,?,?,?,?)",
+                (word_key(word), word, meaning, pos.strip(), source.strip(), notes.strip(),
+                 self.today().isoformat(), self.today().isoformat()))
+            return cursor.lastrowid
+        if self.get_word(ident) is None:
+            raise ValueError("词条不存在。")
+        self.conn.execute(
+            "UPDATE words SET key=?,word=?,meaning=?,pos=?,source=?,notes=?,deleted=0 WHERE id=?",
+            (word_key(word), word, meaning, pos.strip(), source.strip(), notes.strip(), ident))
+        return ident
 
     def delete_word(self, ident):
         # Soft deletion keeps historical questions and reviews intact.
@@ -128,7 +131,9 @@ class Store:
         return self.conn.execute("SELECT * FROM questions WHERE day=? ORDER BY ordinal",
                                  ((day or self.today()).isoformat(),)).fetchall()
 
-    def start_day(self):
+    def start_day(self, count=10, new_percent=50, meaning_percent=50):
+        if type(count) is not int or not 1<=count<=50 or any(type(p) is not int or not 0<=p<=100 for p in (new_percent,meaning_percent)):
+            raise ValueError('每日数量应为 1—50，比例应为 0—100 的整数。')
         day = self.today().isoformat()
         if self.conn.execute("SELECT 1 FROM sessions WHERE day=?", (day,)).fetchone():
             return self.questions()
@@ -141,10 +146,13 @@ class Store:
         # Seed makes ties reproducible; persistence is the source of truth afterward.
         rng = random.Random(day)
         rng.shuffle(new)
-        selected = new[:5] + old[:5]
-        selected += (new[5:] + old[5:])[:10-len(selected)]
+        new_count=(count*new_percent+50)//100
+        old_count=count-new_count
+        selected = new[:new_count] + old[:old_count]
+        selected += (new[new_count:] + old[old_count:])[:count-len(selected)]
         rng.shuffle(selected)
-        kinds = ['meaning'] * ((len(selected)+1)//2) + ['spelling'] * (len(selected)//2)
+        meaning_count=(len(selected)*meaning_percent+50)//100
+        kinds = ['meaning'] * meaning_count + ['spelling'] * (len(selected)-meaning_count)
         rng.shuffle(kinds)
         with self.conn:
             self.conn.execute("INSERT OR IGNORE INTO sessions VALUES(?,?)", (day, datetime.now().isoformat()))
@@ -153,7 +161,7 @@ class Store:
                 self.conn.executemany("""
                     INSERT INTO questions(day,ordinal,word_id,word,meaning,kind,is_new)
                     VALUES(?,?,?,?,?,?,?)""",
-                    [(day, i+1, r['id'], r['word'], r['meaning'], kind, int(not r['attempts']))
+                    [(day, i+1, r['id'], r['word'], (r['study_meaning'] if 'study_meaning' in r.keys() and r['study_meaning'].strip() else r['meaning']), kind, int(not r['attempts']))
                      for i, (r, kind) in enumerate(zip(selected, kinds))])
         return self.questions()
 
